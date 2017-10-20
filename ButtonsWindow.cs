@@ -198,15 +198,7 @@ namespace nothrow.smartbuttons
             var info = (ButtonInfo)button.Tag;
             var executionInfo = info.ExecutionInfo;
 
-            var exitDateText = "";
-            if (executionInfo.ExitDate.HasValue)
-            {
-                exitDateText = $"{executionInfo.ExitDate.Value} - {(DateTime.Now - executionInfo.ExitDate.Value).TotalMinutes:0:00} minutes ago";
-            }
-
-            _detailsWindow.exitCode.Text = executionInfo.ExitCode?.ToString();
-            _detailsWindow.exitTime.Text = exitDateText;
-            _detailsWindow.logs.Text = string.Join(Environment.NewLine, executionInfo.OutputLines);
+            _detailsWindow.ExecutionInfo = executionInfo;
 
             _detailsWindow.Left = Left - _detailsWindow.Width;
             _detailsWindow.Top = Top + button.Top;
@@ -286,12 +278,15 @@ namespace nothrow.smartbuttons
                                           executionInfo.RunningProcess = null;
                                           executionInfo.ExitDate = process.ExitTime;
                                           executionInfo.ExitCode = process.ExitCode;
+                                          executionInfo.Stopwatch.Stop();
                                       }
                                   };
 
                 try
                 {
                     process.Start();
+                    executionInfo.Stopwatch.Restart();
+
                 }
                 catch (Exception ex)
                 {
@@ -363,7 +358,7 @@ namespace nothrow.smartbuttons
             public ButtonExecutionInfo ExecutionInfo { get; } = new ButtonExecutionInfo();
         }
 
-        private class ButtonExecutionInfo
+        public class ButtonExecutionInfo
         {
             private const int Threshold = 10;
 
@@ -383,6 +378,8 @@ namespace nothrow.smartbuttons
                     }
                 }
             }
+
+            public Stopwatch Stopwatch { get; } = new Stopwatch();
 
             public void SetOutputLine(string line)
             {
@@ -433,6 +430,7 @@ namespace nothrow.smartbuttons
         private void hideDetailsTimer_Tick(object sender, EventArgs e)
         {
             _detailsWindow.Hide();
+            _detailsWindow.ExecutionInfo = null;
             hideDetailsTimer.Enabled = false;
         }
     }

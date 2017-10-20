@@ -28,11 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.logs = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.exitCode = new System.Windows.Forms.Label();
             this.exitTime = new System.Windows.Forms.Label();
+            this.runningFor = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.updateTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // logs
@@ -80,11 +84,36 @@
             this.exitTime.Size = new System.Drawing.Size(0, 13);
             this.exitTime.TabIndex = 4;
             // 
+            // runningFor
+            // 
+            this.runningFor.AutoSize = true;
+            this.runningFor.Location = new System.Drawing.Point(507, 9);
+            this.runningFor.Name = "runningFor";
+            this.runningFor.Size = new System.Drawing.Size(0, 13);
+            this.runningFor.TabIndex = 6;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(449, 9);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(68, 13);
+            this.label4.TabIndex = 5;
+            this.label4.Text = "Running for: ";
+            // 
+            // updateTimer
+            // 
+            this.updateTimer.Enabled = true;
+            this.updateTimer.Interval = 1000;
+            this.updateTimer.Tick += new System.EventHandler(this.updateTimer_Tick);
+            // 
             // DetailsWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(633, 382);
+            this.Controls.Add(this.runningFor);
+            this.Controls.Add(this.label4);
             this.Controls.Add(this.exitTime);
             this.Controls.Add(this.exitCode);
             this.Controls.Add(this.label2);
@@ -107,5 +136,8 @@
         private System.Windows.Forms.Label label2;
         public System.Windows.Forms.Label exitCode;
         public System.Windows.Forms.Label exitTime;
+        public System.Windows.Forms.Label runningFor;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Timer updateTimer;
     }
 }
