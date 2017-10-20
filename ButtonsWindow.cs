@@ -206,7 +206,7 @@ namespace nothrow.smartbuttons
 
             _detailsWindow.exitCode.Text = executionInfo.ExitCode?.ToString();
             _detailsWindow.exitTime.Text = exitDateText;
-            _detailsWindow.logs.Text = string.Join("\n", executionInfo.OutputLines);
+            _detailsWindow.logs.Text = string.Join(Environment.NewLine, executionInfo.OutputLines);
 
             _detailsWindow.Left = Left - _detailsWindow.Width;
             _detailsWindow.Top = Top + button.Top;
@@ -262,8 +262,14 @@ namespace nothrow.smartbuttons
                 process.StartInfo.RedirectStandardError = true;
                 process.EnableRaisingEvents = true;
 
-                process.ErrorDataReceived += (o, args) => executionInfo.AppendOutputLines(args.Data);
-                process.OutputDataReceived += (o, args) => executionInfo.AppendOutputLines(args.Data);
+                process.ErrorDataReceived += (o, args) =>
+                                             {
+                                                 executionInfo.AppendOutputLines(args.Data);
+                                             };
+                process.OutputDataReceived += (o, args) =>
+                                              {
+                                                  executionInfo.AppendOutputLines(args.Data);
+                                              };
 
                 process.Exited += (o, args) =>
                                   {
@@ -297,6 +303,9 @@ namespace nothrow.smartbuttons
                 executionInfo.Reset();
                 executionInfo.RunningProcess = process;
                 SetButtonStatus(button, ButtonStatus.Running);
+
+                process.BeginErrorReadLine();
+                process.BeginOutputReadLine();
             }
         }
 
@@ -386,6 +395,9 @@ namespace nothrow.smartbuttons
 
             public void AppendOutputLines(string text)
             {
+                if (text == null)
+                    return;
+
                 lock (SyncRoot)
                 {
                     foreach (var line in text.Split('\n'))
