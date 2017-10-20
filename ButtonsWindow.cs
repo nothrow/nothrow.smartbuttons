@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 using YamlDotNet.Serialization;
@@ -24,7 +25,7 @@ namespace nothrow.smartbuttons
         private const string ButtonsConfigFile = "buttons.yml";
 
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private Button[] _buttons = new Button[0];
+        private ButtonInfo[] _buttons = new ButtonInfo[0];
         private ButtonsConfiguration _currentConfiguration = new ButtonsConfiguration();
         private int _targetOpacity;
 
@@ -64,7 +65,7 @@ namespace nothrow.smartbuttons
             get => (int)(Opacity * 100);
             set => Invoke((MethodInvoker)(() => Opacity = value / 100.0));
         }
-        
+
         private void SystemEventsOnDisplaySettingsChanged(object sender, EventArgs eventArgs)
         {
             MoveToProperLocation();
@@ -133,10 +134,11 @@ namespace nothrow.smartbuttons
         {
             foreach (var button in _buttons)
             {
-                Controls.Remove(button);
+                Controls.Remove(button.ActionButton);
+                button.ActionButton.Dispose();
             }
 
-            _buttons = new Button[config.Buttons.Count];
+            _buttons = new ButtonInfo[config.Buttons.Count];
             var top = errorLabel.Top + errorLabel.Height + InternalMarginVertical;
 
             for (var i = 0; i < config.Buttons.Count; i++)
@@ -150,9 +152,13 @@ namespace nothrow.smartbuttons
                 but.Top = top;
                 but.Text = cb.Caption;
 
+                but.Click += InvokeActionButton;
+
                 top += but.Height + InternalMarginVertical;
 
-                _buttons[i] = but;
+                _buttons[i] = new ButtonInfo(but, cb);
+                but.Tag = _buttons[i];
+
                 Controls.Add(but);
             }
 
@@ -160,6 +166,83 @@ namespace nothrow.smartbuttons
             _currentConfiguration = config;
 
             errorLabel.Text = "";
+        }
+
+        private void SetButtonStatus(Button button, ButtonStatus buttonStatus)
+        {
+            switch (buttonStatus)
+            {
+                case ButtonStatus.Running:
+                    button.BackColor = Color.Gray;
+                    break;
+                case ButtonStatus.Success:
+                    button.BackColor = Color.LightGreen;
+                    break;
+                case ButtonStatus.Failure:
+                    button.BackColor = Color.LightCoral;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(buttonStatus), buttonStatus, null);
+            }
+        }
+
+        private void InvokeActionButton(object sender, EventArgs e)
+        {
+            var button = (Button)sender;
+            var info = (ButtonInfo)button.Tag;
+            var executionInfo = info.ExecutionInfo;
+
+            lock (executionInfo.SyncRoot)
+            {
+                if (executionInfo.RunningProcess != null)
+                    return;
+
+                var process = new Process();
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.Arguments =
+                    string.Join(" ", info.Configuration.Action.Parameters.Select(x => $"\"{x}\""));
+
+                process.StartInfo.FileName = info.Configuration.Action.Command;
+                process.StartInfo.WorkingDirectory = info.Configuration.Action.Pwd;
+
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.EnableRaisingEvents = true;
+
+                process.ErrorDataReceived += (o, args) => executionInfo.AppendOutputLines(args.Data);
+                process.OutputDataReceived += (o, args) => executionInfo.AppendOutputLines(args.Data);
+
+                process.Exited += (o, args) =>
+                                  {
+                                      if (process.ExitCode == 0)
+                                      {
+                                          SetButtonStatus(button, ButtonStatus.Success);
+                                      }
+                                      else
+                                      {
+                                          SetButtonStatus(button, ButtonStatus.Failure);
+                                      }
+                                      lock (executionInfo.SyncRoot)
+                                      {
+                                          executionInfo.RunningProcess = null;
+                                      }
+                                  };
+
+                try
+                {
+                    process.Start();
+                }
+                catch (Exception ex)
+                {
+                    executionInfo.SetOutputLine(ex.Message);
+                    SetButtonStatus(button, ButtonStatus.Failure);
+                    return;
+                }
+
+                executionInfo.ClearOutputLines();
+                executionInfo.RunningProcess = process;
+                SetButtonStatus(button, ButtonStatus.Running);
+            }
         }
 
         private static ButtonsConfiguration LoadConfiguration()
@@ -199,6 +282,75 @@ namespace nothrow.smartbuttons
         {
             hidingTimer.Enabled = true;
             Hide();
+        }
+
+        private class ButtonInfo
+        {
+            public ButtonInfo(Button actionButton, ButtonConfiguration configuration)
+            {
+                Configuration = configuration;
+                ActionButton = actionButton;
+            }
+
+            public ButtonConfiguration Configuration { get; }
+
+            public Button ActionButton { get; }
+
+            public ButtonExecutionInfo ExecutionInfo { get; } = new ButtonExecutionInfo();
+        }
+
+        private class ButtonExecutionInfo
+        {
+            private const int Threshold = 10;
+
+            private readonly Queue<string> _outputLines = new Queue<string>();
+            public object SyncRoot { get; } = new object();
+            public Process RunningProcess { get; set; }
+
+            public IEnumerable<string> OutputLines
+            {
+                get
+                {
+                    lock (SyncRoot)
+                    {
+                        return _outputLines ?? Enumerable.Empty<string>();
+                    }
+                }
+            }
+
+            public void SetOutputLine(string line)
+            {
+                lock (SyncRoot)
+                {
+                    _outputLines.Clear();
+                    _outputLines.Enqueue(line);
+                }
+            }
+
+            public void AppendOutputLines(string text)
+            {
+                lock (SyncRoot)
+                {
+                    foreach (var line in text.Split('\n'))
+                    {
+                        _outputLines.Enqueue(line.Trim());
+                        if (_outputLines.Count > Threshold)
+                            _outputLines.Dequeue();
+                    }
+                }
+            }
+
+            public void ClearOutputLines()
+            {
+                _outputLines.Clear();
+            }
+        }
+
+        private enum ButtonStatus
+        {
+            Running,
+            Success,
+            Failure
         }
     }
 }

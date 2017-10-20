@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace nothrow.smartbuttons
 {
@@ -6,6 +7,7 @@ namespace nothrow.smartbuttons
     {
         public string Command { get; set; }
         public string Pwd { get; set; }
+        public List<string> Parameters { get; set; } = new List<string>();
 
         public bool Equals(ButtonAction other)
         {
