@@ -133,6 +133,7 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "ButtonsWindow";
             this.Opacity = 0.8D;
+            this.ShowInTaskbar = false;
             this.TopMost = true;
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ButtonsWindow_FormClosing);
             this.Load += new System.EventHandler(this.ButtonsWindow_Load);
