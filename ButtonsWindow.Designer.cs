@@ -32,17 +32,25 @@
             System.Windows.Forms.Timer opacityTimer;
             this.rclickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.editConfigurationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.hideFor10SecondsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.configWatcher = new System.IO.FileSystemWatcher();
             this.errorLabel = new System.Windows.Forms.Label();
             this.hidingTimer = new System.Windows.Forms.Timer(this.components);
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.hideFor10SecondsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showDetailsTimer = new System.Windows.Forms.Timer(this.components);
+            this.hideDetailsTimer = new System.Windows.Forms.Timer(this.components);
             opacityTimer = new System.Windows.Forms.Timer(this.components);
             this.rclickMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.configWatcher)).BeginInit();
             this.SuspendLayout();
+            // 
+            // opacityTimer
+            // 
+            opacityTimer.Enabled = true;
+            opacityTimer.Interval = 40;
+            opacityTimer.Tick += new System.EventHandler(this.opacityTimer_Tick);
             // 
             // rclickMenu
             // 
@@ -53,24 +61,36 @@
             this.toolStripSeparator1,
             this.exitToolStripMenuItem});
             this.rclickMenu.Name = "rclickMenu";
-            this.rclickMenu.Size = new System.Drawing.Size(179, 104);
+            this.rclickMenu.Size = new System.Drawing.Size(179, 82);
             // 
             // editConfigurationToolStripMenuItem
             // 
             this.editConfigurationToolStripMenuItem.Name = "editConfigurationToolStripMenuItem";
-            this.editConfigurationToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
+            this.editConfigurationToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.editConfigurationToolStripMenuItem.Text = "&Edit configuration";
             this.editConfigurationToolStripMenuItem.Click += new System.EventHandler(this.editConfigurationToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(175, 6);
+            // 
+            // hideFor10SecondsToolStripMenuItem
+            // 
+            this.hideFor10SecondsToolStripMenuItem.Name = "hideFor10SecondsToolStripMenuItem";
+            this.hideFor10SecondsToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.hideFor10SecondsToolStripMenuItem.Text = "Hide for 10 seconds";
+            this.hideFor10SecondsToolStripMenuItem.Click += new System.EventHandler(this.hideFor10SecondsToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(166, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(175, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(169, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -94,23 +114,14 @@
             this.hidingTimer.Interval = 10000;
             this.hidingTimer.Tick += new System.EventHandler(this.hidingTimer_Tick);
             // 
-            // opacityTimer
+            // showDetailsTimer
             // 
-            opacityTimer.Enabled = true;
-            opacityTimer.Interval = 40;
-            opacityTimer.Tick += new System.EventHandler(this.opacityTimer_Tick);
+            this.showDetailsTimer.Interval = 1000;
+            this.showDetailsTimer.Tick += new System.EventHandler(this.showDetailsTimer_Tick);
             // 
-            // toolStripSeparator2
+            // hideDetailsTimer
             // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(175, 6);
-            // 
-            // hideFor10SecondsToolStripMenuItem
-            // 
-            this.hideFor10SecondsToolStripMenuItem.Name = "hideFor10SecondsToolStripMenuItem";
-            this.hideFor10SecondsToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
-            this.hideFor10SecondsToolStripMenuItem.Text = "Hide for 10 seconds";
-            this.hideFor10SecondsToolStripMenuItem.Click += new System.EventHandler(this.hideFor10SecondsToolStripMenuItem_Click);
+            this.hideDetailsTimer.Tick += new System.EventHandler(this.hideDetailsTimer_Tick);
             // 
             // ButtonsWindow
             // 
@@ -146,6 +157,8 @@
         private System.Windows.Forms.Timer hidingTimer;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem hideFor10SecondsToolStripMenuItem;
+        private System.Windows.Forms.Timer showDetailsTimer;
+        private System.Windows.Forms.Timer hideDetailsTimer;
     }
 }
 

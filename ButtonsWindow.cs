@@ -22,7 +22,19 @@ namespace nothrow.smartbuttons
         private const int InvisibleOpacity = 10;
         private const int VisibleOpacity = 80;
 
+        private readonly DetailsWindow _detailsWindow = new DetailsWindow();
+        private readonly object _configurationSyncLock = new object();
+
         private const string ButtonsConfigFile = "buttons.yml";
+
+        private const string DefaultConfigFile = @"buttons:
+  - caption: Edit configuration
+    action:
+      command: notepad
+      parameters:
+        - {0}
+      pwd: c:\
+";
 
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private ButtonInfo[] _buttons = new ButtonInfo[0];
@@ -44,7 +56,7 @@ namespace nothrow.smartbuttons
             ReloadConfiguration();
         }
 
-        private static string ButtonsPath => Path.Combine(ConfigPath, ButtonsConfigFile);
+        private static string ButtonsConfigFilePath => Path.Combine(ConfigPath, ButtonsConfigFile);
 
         private static string ConfigPath
         {
@@ -106,7 +118,7 @@ namespace nothrow.smartbuttons
 
         private void editConfigurationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Process.Start("notepad.exe", ButtonsPath);
+            Process.Start("notepad.exe", ButtonsConfigFilePath);
         }
 
         private void configWatcher_Changed(object sender, FileSystemEventArgs e)
@@ -118,11 +130,20 @@ namespace nothrow.smartbuttons
         {
             try
             {
-                var config = LoadConfiguration();
-                if (config.Equals(_currentConfiguration))
-                    return;
+                lock (_configurationSyncLock)
+                {
+                    if (!File.Exists(ButtonsConfigFilePath))
+                    {
+                        File.WriteAllText(ButtonsConfigFilePath,
+                                          string.Format(DefaultConfigFile, ButtonsConfigFilePath));
+                    }
 
-                ApplyConfiguration(config);
+                    var config = LoadConfiguration();
+                    if (config.Equals(_currentConfiguration))
+                        return;
+
+                    ApplyConfiguration(config);
+                }
             }
             catch (Exception)
             {
@@ -153,6 +174,9 @@ namespace nothrow.smartbuttons
                 but.Text = cb.Caption;
 
                 but.Click += InvokeActionButton;
+                but.MouseEnter += EnterActionButton;
+                but.MouseLeave += LeaveActionButton;
+
 
                 top += but.Height + InternalMarginVertical;
 
@@ -166,6 +190,35 @@ namespace nothrow.smartbuttons
             _currentConfiguration = config;
 
             errorLabel.Text = "";
+        }
+
+        private void EnterActionButton(object sender, EventArgs e)
+        {
+            var button = (Button)sender;
+            var info = (ButtonInfo)button.Tag;
+            var executionInfo = info.ExecutionInfo;
+
+            var exitDateText = "";
+            if (executionInfo.ExitDate.HasValue)
+            {
+                exitDateText = $"{executionInfo.ExitDate.Value} - {(DateTime.Now - executionInfo.ExitDate.Value).TotalMinutes:0:00} minutes ago";
+            }
+
+            _detailsWindow.exitCode.Text = executionInfo.ExitCode?.ToString();
+            _detailsWindow.exitTime.Text = exitDateText;
+            _detailsWindow.logs.Text = string.Join("\n", executionInfo.OutputLines);
+
+            _detailsWindow.Left = Left - _detailsWindow.Width;
+            _detailsWindow.Top = Top + button.Top;
+
+            hideDetailsTimer.Enabled = false;
+            showDetailsTimer.Enabled = true;
+        }
+
+        private void LeaveActionButton(object sender, EventArgs e)
+        {
+            hideDetailsTimer.Enabled = true;
+            showDetailsTimer.Enabled = false;
         }
 
         private void SetButtonStatus(Button button, ButtonStatus buttonStatus)
@@ -225,6 +278,8 @@ namespace nothrow.smartbuttons
                                       lock (executionInfo.SyncRoot)
                                       {
                                           executionInfo.RunningProcess = null;
+                                          executionInfo.ExitDate = process.ExitTime;
+                                          executionInfo.ExitCode = process.ExitCode;
                                       }
                                   };
 
@@ -239,7 +294,7 @@ namespace nothrow.smartbuttons
                     return;
                 }
 
-                executionInfo.ClearOutputLines();
+                executionInfo.Reset();
                 executionInfo.RunningProcess = process;
                 SetButtonStatus(button, ButtonStatus.Running);
             }
@@ -247,7 +302,7 @@ namespace nothrow.smartbuttons
 
         private static ButtonsConfiguration LoadConfiguration()
         {
-            using (var f = File.Open(ButtonsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var f = File.Open(ButtonsConfigFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (var sr = new StreamReader(f))
             {
                 var deserializer = new DeserializerBuilder().WithNamingConvention(new CamelCaseNamingConvention()).
@@ -306,6 +361,8 @@ namespace nothrow.smartbuttons
             private readonly Queue<string> _outputLines = new Queue<string>();
             public object SyncRoot { get; } = new object();
             public Process RunningProcess { get; set; }
+            public int? ExitCode { get; set; }
+            public DateTime? ExitDate { get; set; }
 
             public IEnumerable<string> OutputLines
             {
@@ -313,7 +370,7 @@ namespace nothrow.smartbuttons
                 {
                     lock (SyncRoot)
                     {
-                        return _outputLines ?? Enumerable.Empty<string>();
+                        return _outputLines.ToArray();
                     }
                 }
             }
@@ -340,9 +397,11 @@ namespace nothrow.smartbuttons
                 }
             }
 
-            public void ClearOutputLines()
+            public void Reset()
             {
                 _outputLines.Clear();
+                ExitCode = null;
+                ExitDate = null;
             }
         }
 
@@ -351,6 +410,18 @@ namespace nothrow.smartbuttons
             Running,
             Success,
             Failure
+        }
+
+        private void showDetailsTimer_Tick(object sender, EventArgs e)
+        {
+            _detailsWindow.Show();
+            showDetailsTimer.Enabled = false;
+        }
+
+        private void hideDetailsTimer_Tick(object sender, EventArgs e)
+        {
+            _detailsWindow.Hide();
+            hideDetailsTimer.Enabled = false;
         }
     }
 }
