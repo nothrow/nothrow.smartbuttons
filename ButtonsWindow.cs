@@ -36,7 +36,6 @@ namespace nothrow.smartbuttons
 
             _targetOpacity = VisibleOpacity;
             Opacity = VisibleOpacity / 100.0;
-            Task.Run(UpdateOpacityTask, _cts.Token);
 
             configWatcher.Filter = ButtonsConfigFile;
             configWatcher.Path = ConfigPath;
@@ -65,22 +64,7 @@ namespace nothrow.smartbuttons
             get => (int)(Opacity * 100);
             set => Invoke((MethodInvoker)(() => Opacity = value / 100.0));
         }
-
-        private async Task UpdateOpacityTask()
-        {
-            while (!_cts.IsCancellationRequested)
-            {
-                if (OpacityPercentage != _targetOpacity)
-                {
-                    OpacityPercentage += Math.Sign(_targetOpacity - OpacityPercentage) * OpacitySpeed;
-                    if (Math.Abs(_targetOpacity - OpacityPercentage) < OpacitySpeed)
-                        OpacityPercentage = _targetOpacity;
-                }
-
-                await Task.Delay(40);
-            }
-        }
-
+        
         private void SystemEventsOnDisplaySettingsChanged(object sender, EventArgs eventArgs)
         {
             MoveToProperLocation();
@@ -193,6 +177,28 @@ namespace nothrow.smartbuttons
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void opacityTimer_Tick(object sender, EventArgs e)
+        {
+            if (OpacityPercentage != _targetOpacity)
+            {
+                OpacityPercentage += Math.Sign(_targetOpacity - OpacityPercentage) * OpacitySpeed;
+                if (Math.Abs(_targetOpacity - OpacityPercentage) < OpacitySpeed)
+                    OpacityPercentage = _targetOpacity;
+            }
+        }
+
+        private void hidingTimer_Tick(object sender, EventArgs e)
+        {
+            Show();
+            hidingTimer.Enabled = false;
+        }
+
+        private void hideFor10SecondsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            hidingTimer.Enabled = true;
+            Hide();
         }
     }
 }
