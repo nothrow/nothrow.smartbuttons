@@ -54,6 +54,7 @@
     <Compile Include="DetailsWindow.Designer.cs">
       <DependentUpon>DetailsWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interop.cs" />
     <Compile Include="Models\ButtonAction.cs" />
     <Compile Include="Models\ButtonConfiguration.cs" />
     <Compile Include="Models\ButtonsConfiguration.cs" />

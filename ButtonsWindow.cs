@@ -93,6 +93,7 @@ namespace nothrow.smartbuttons
         private void ButtonsWindow_Load(object sender, EventArgs e)
         {
             MoveToProperLocation();
+            Interop.HideFromTaskSwitcher(this);
         }
 
         private void ButtonsWindow_FormClosing(object sender, FormClosingEventArgs e)
@@ -423,7 +424,7 @@ namespace nothrow.smartbuttons
 
         private void showDetailsTimer_Tick(object sender, EventArgs e)
         {
-            _detailsWindow.Show();
+            _detailsWindow.Show(this);
             showDetailsTimer.Enabled = false;
         }
 
