@@ -424,7 +424,11 @@ namespace nothrow.smartbuttons
 
         private void showDetailsTimer_Tick(object sender, EventArgs e)
         {
-            _detailsWindow.Show(this);
+            if (!_detailsWindow.Visible)
+            {
+                _detailsWindow.Show(this);
+            }
+
             showDetailsTimer.Enabled = false;
         }
 
